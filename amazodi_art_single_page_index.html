@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AMAZODI Art — Vector & Graphic Library (Dark)</title>
+  <meta name="description" content="AMAZODI Art - single-page demo inspired by Vecteezy. Dark-mode UI, upload, search, tags, likes, comments, watermark preview and simulated paid downloads." />
+  <style>
+    /* ---------- BASE (Dark) ---------- */
+    :root{
+      --bg:#0b0f14; --panel:#0f1720; --muted:#94a3b8; --accent:#7c3aed; --success:#16a34a;
+      --glass: rgba(255,255,255,0.03);
+      --card-shadow: 0 6px 18px rgba(2,6,23,0.6);
+      --radius:14px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:linear-gradient(180deg,var(--bg),#06080a 60%); color:#e6eef8;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; padding:28px; 
+    }
+    a{color:inherit}
+
+    /* ---------- LAYOUT ---------- */
+    .wrap{max-width:1200px;margin:0 auto}
+    header{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo .mark{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:700;color:white}
+    .title{font-size:20px;font-weight:700}
+    .subtitle{font-size:12px;color:var(--muted)}
+
+    /* ---------- CONTROLS ---------- */
+    .controls{display:flex;gap:12px;align-items:center;margin:16px 0}
+    .search{flex:1;display:flex;gap:8px}
+    .search input{flex:1;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:var(--panel);color:inherit}
+    .btn{padding:10px 14px;border-radius:12px;background:var(--glass);border:1px solid rgba(255,255,255,0.04);cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#4f46e5);color:white;border:none}
+
+    /* ---------- GRID ---------- */
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    @media (max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:640px){.grid{grid-template-columns:1fr}}
+
+    /* ---------- CARD ---------- */
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:12px;padding:12px;box-shadow:var(--card-shadow);display:flex;flex-direction:column;gap:10px}
+    .thumb{height:180px;border-radius:10px;overflow:hidden;background:#051018;display:flex;align-items:center;justify-content:center}
+    .meta{display:flex;justify-content:space-between;align-items:center}
+    .tags{font-size:12px;color:var(--muted)}
+    .actions{display:flex;gap:8px;align-items:center}
+    .likes{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px}
+    .small{font-size:13px;color:var(--muted)}
+
+    /* ---------- MODALS & PANELS ---------- */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal{width:860px;max-width:100%;background:linear-gradient(180deg,var(--panel),#08111b);border-radius:14px;padding:18px}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    textarea{width:100%;min-height:82px;border-radius:10px;padding:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+
+    /* ---------- UPLOAD ---------- */
+    .uploader{display:flex;gap:12px;align-items:center}
+    .file-preview{max-width:120px;max-height:120px;border-radius:10px;overflow:hidden;background:#031018}
+
+    /* ---------- FOOTER ---------- */
+    footer{margin-top:22px;color:var(--muted);font-size:13px}
+
+    /* tiny helpers */
+    .muted{color:var(--muted)}
+    .pill{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:999px;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">
+        <div class="mark">AA</div>
+        <div>
+          <div class="title">AMAZODI Art</div>
+          <div class="subtitle">Vectors · Illustrations · Icons — Dark UI single-page demo</div>
+        </div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <button class="btn" id="adminBtn">Admin</button>
+        <button class="btn primary" id="uploadBtn">Upload</button>
+      </div>
+    </header>
+
+    <section class="controls">
+      <div class="search">
+        <input id="searchInput" placeholder="Search vectors, tags, authors... (try: nature, ui, icons)" />
+        <select id="categoryFilter" class="btn">
+          <option value="">All categories</option>
+          <option>Illustration</option>
+          <option>Icon</option>
+          <option>Pattern</option>
+          <option>Mockup</option>
+        </select>
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="pill" id="counts">0 results</div>
+      </div>
+    </section>
+
+    <main>
+      <div class="grid" id="gallery"></div>
+    </main>
+
+    <footer>
+      Built for demo — single-page. To publish: push this file to GitHub and enable GitHub Pages on the repository (branch: main). See notes below.
+    </footer>
+  </div>
+
+  <!-- Modal: Asset details / download / comments -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div id="modalTitle" style="font-weight:700;font-size:18px"></div>
+          <div id="modalAuthor" class="muted small"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="muted small" id="modalTags"></div>
+          <button class="btn" id="modalClose">Close</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1">
+          <div id="modalThumb" style="height:360px;border-radius:12px;overflow:hidden;background:#02121a;display:flex;align-items:center;justify-content:center"></div>
+        </div>
+        <div style="width:360px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="small" id="modalDesc">Description</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn primary" id="downloadFree">Download (Free - Watermarked)</button>
+              <button class="btn" id="downloadPaid">Buy HD (One-time)</button>
+            </div>
+            <div class="small muted">Price: <span id="modalPrice">Free</span></div>
+            <div style="height:8px"></div>
+            <div>
+              <div style="font-weight:700">Comments</div>
+              <div id="commentsList" style="max-height:200px;overflow:auto;margin-top:8px"></div>
+              <textarea id="commentInput" placeholder="Write a comment..."></textarea>
+              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+                <button class="btn" id="addComment">Post comment</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Upload -->
+  <div id="uploadBackdrop" class="modal-backdrop">
+    <div class="modal" style="max-width:700px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-weight:700">Upload to AMAZODI Art</div>
+        <button class="btn" id="uploadClose">Close</button>
+      </div>
+      <div class="row">
+        <div class="col">
+          <input id="fileInput" type="file" accept="image/*,.svg" />
+          <div style="height:10px"></div>
+          <input id="titleInput" placeholder="Title" />
+          <div style="height:8px"></div>
+          <input id="authorInput" placeholder="Author" />
+          <div style="height:8px"></div>
+          <input id="tagsInput" placeholder="Tags (comma separated)" />
+          <div style="height:8px"></div>
+          <select id="categoryInput"><option>Illustration</option><option>Icon</option><option>Pattern</option><option>Mockup</option></select>
+          <div style="height:8px"></div>
+          <textarea id="descInput" placeholder="Short description"></textarea>
+          <div style="height:10px"></div>
+          <label class="small muted">Free download will include watermark. Paid download simulates checkout.</label>
+          <div style="height:10px"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn primary" id="doUpload">Upload</button>
+          </div>
+        </div>
+        <div style="width:140px">
+          <div class="file-preview" id="filePreview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tiny admin panel demo -->
+  <div id="adminBackdrop" class="modal-backdrop">
+    <div class="modal" style="max-width:760px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-weight:700">Admin — Demo</div>
+        <button class="btn" id="adminClose">Close</button>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div style="flex:1">
+          <div style="font-weight:700">Assets</div>
+          <div id="adminAssets" style="max-height:360px;overflow:auto;margin-top:8px"></div>
+        </div>
+        <div style="width:260px">
+          <div style="font-weight:700">Actions</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+            <button class="btn" id="reseedBtn">Reseed demo data</button>
+            <button class="btn" id="clearDataBtn">Clear all local data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ---------- Simple client-side demo store ---------- */
+    const STORAGE_KEY = 'amazodi_assets_v1';
+
+    // seed demo dataset
+    const seed = () => ([
+      {id:uid(),'title':'Sunny Mountain','author':'Kamanzi','category':'Illustration','tags':['nature','mountain','sun'],'src':demoSvg('sunny'),desc:'A vector mountain scene',likes:12,comments:[] ,paid:3},
+      {id:uid(),'title':'UI Icons Pack','author':'Mutesi','category':'Icon','tags':['ui','icons','web'],'src':demoSvg('icons'),desc:'Collection of common UI icons',likes:34,comments:[],paid:0},
+      {id:uid(),'title':'Floral Pattern','author':'Nyagah','category':'Pattern','tags':['floral','pattern','seamless'],'src':demoSvg('floral'),desc:'Seamless floral pattern',likes:5,comments:[],paid:2},
+      {id:uid(),'title':'Abstract Waves','author':'Rwanda Art','category':'Mockup','tags':['abstract','waves'],'src':demoSvg('waves'),desc:'Abstract wave shapes',likes:18,comments:[],paid:1}
+    ]);
+
+    function uid(){return 'id_'+Math.random().toString(36).slice(2,9)}
+
+    // small demo svg generator (returns data url)
+    function demoSvg(kind){
+      const map = {
+        sunny:`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'><rect width='100%' height='100%' fill='#071129'/><circle cx='200' cy='120' r='70' fill='#FFD966'/><g fill='none' stroke='#58C7FF' stroke-width='8'><path d='M0 700 C 300 400 900 400 1200 700' /></g></svg>`,
+        icons:`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'><rect width='100%' height='100%' fill='#08111b'/><g fill='none' stroke='#9BD1FF' stroke-width='24'><rect x='80' y='80' width='160' height='160' rx='24'/><circle cx='420' cy='160' r='64'/><path d='M700 120 h160 v160'/></g></svg>`,
+        floral:`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'><rect width='100%' height='100%' fill='#051018'/><g fill='#FF7AB6'><circle cx='220' cy='200' r='40'/><circle cx='260' cy='240' r='30'/><circle cx='200' cy='240' r='28'/></g></svg>`,
+        waves:`<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'><rect width='100%' height='100%' fill='#02121a'/><path d='M0 600 C200 500 400 700 600 600 C800 500 1000 700 1200 600 L1200 800 L0 800 Z' fill='#1E3A8A'/></svg>`
+      };
+      return 'data:image/svg+xml;utf8,'+encodeURIComponent(map[kind]||map.sunny);
+    }
+
+    // load store or seed
+    function loadStore(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw){const s=seed(); localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); return s}
+      try{return JSON.parse(raw)||[];}catch(e){const s=seed(); localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); return s}
+    }
+    function saveStore(arr){localStorage.setItem(STORAGE_KEY, JSON.stringify(arr))}
+
+    let assets = loadStore();
+
+    /* ---------- UI helpers ---------- */
+    const gallery = document.getElementById('gallery');
+    const counts = document.getElementById('counts');
+
+    function renderGallery(list){
+      gallery.innerHTML='';
+      counts.textContent = `${list.length} result${list.length!==1?'s':''}`;
+      list.forEach(a=>{
+        const card = document.createElement('div'); card.className='card';
+        const thumb = document.createElement('div'); thumb.className='thumb';
+        // load thumbnail image
+        const img = new Image(); img.src = a.src; img.style.maxWidth='100%'; img.style.maxHeight='100%';
+        thumb.appendChild(img);
+        card.appendChild(thumb);
+        const titleRow = document.createElement('div'); titleRow.style.display='flex'; titleRow.style.justifyContent='space-between'; titleRow.style.alignItems='center';
+        const left = document.createElement('div'); left.innerHTML=`<div style="font-weight:700">${escapeHtml(a.title)}</div><div class="small muted">by ${escapeHtml(a.author)} • ${escapeHtml(a.category)}</div>`;
+        const right = document.createElement('div'); right.className='actions';
+        const likeBtn = document.createElement('button'); likeBtn.className='btn'; likeBtn.textContent = `❤ ${a.likes||0}`;
+        likeBtn.onclick = ()=>{ a.likes = (a.likes||0)+1; save(); renderGallery(filteredAssets()); };
+        const viewBtn = document.createElement('button'); viewBtn.className='btn primary'; viewBtn.textContent='View'; viewBtn.onclick = ()=> openModal(a.id);
+        right.appendChild(likeBtn); right.appendChild(viewBtn);
+        titleRow.appendChild(left); titleRow.appendChild(right);
+        card.appendChild(titleRow);
+        const tagRow = document.createElement('div'); tagRow.className='tags'; tagRow.textContent = a.tags.join(', ');
+        card.appendChild(tagRow);
+        gallery.appendChild(card);
+      })
+    }
+
+    // escape helper
+    function escapeHtml(s){return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+
+    // filtering
+    function filteredAssets(){
+      const q = (document.getElementById('searchInput').value||'').toLowerCase().trim();
+      const cat = (document.getElementById('categoryFilter').value||'').toLowerCase();
+      return assets.filter(a=>{
+        if(cat && a.category.toLowerCase() !== cat) return false;
+        if(!q) return true;
+        const hay = (a.title+' '+a.tags.join(' ')+' '+a.author+' '+a.desc+' '+a.category).toLowerCase();
+        return hay.includes(q);
+      })
+    }
+
+    // save and rerender
+    function save(){ saveStore(assets); }
+
+    // modal logic
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalAuthor = document.getElementById('modalAuthor');
+    const modalThumb = document.getElementById('modalThumb');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalTags = document.getElementById('modalTags');
+    const modalPrice = document.getElementById('modalPrice');
+    const commentsList = document.getElementById('commentsList');
+
+    function openModal(id){
+      const a = assets.find(x=>x.id===id); if(!a) return;
+      modalTitle.textContent = a.title; modalAuthor.textContent = 'by '+a.author; modalDesc.textContent = a.desc||''; modalTags.textContent = a.tags.join(', ');
+      modalPrice.textContent = a.paid ? `$${a.paid}.00` : 'Free';
+      modalThumb.innerHTML='';
+      const img = new Image(); img.src = a.src; img.style.maxWidth='100%'; img.style.maxHeight='100%'; modalThumb.appendChild(img);
+      commentsList.innerHTML=''; (a.comments||[]).forEach(c=>{ const d=document.createElement('div'); d.className='small muted'; d.textContent = `${c.name||'User'}: ${c.text}`; commentsList.appendChild(d); })
+      modalBackdrop.style.display='flex';
+
+      // wire download buttons
+      document.getElementById('downloadFree').onclick = ()=> downloadWatermarked(a);
+      document.getElementById('downloadPaid').onclick = ()=> purchaseAsset(a);
+
+      // comment post
+      document.getElementById('addComment').onclick = ()=>{
+        const txt = document.getElementById('commentInput').value.trim(); if(!txt) return alert('Please write a comment');
+        a.comments = a.comments||[]; a.comments.push({name:'Visitor',text:txt}); save(); document.getElementById('commentInput').value=''; openModal(id);
+      }
+    }
+    document.getElementById('modalClose').onclick = ()=>{ modalBackdrop.style.display='none'; document.getElementById('commentInput').value=''; }
+
+    // watermark download (client-side overlay)
+    function downloadWatermarked(a){
+      // fetch image/svg and overlay watermark text
+      fetch(a.src).then(r=>r.blob()).then(blob=>{
+        const url = URL.createObjectURL(blob);
+        const img = new Image(); img.onload = ()=>{
+          const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; const ctx = c.getContext('2d'); ctx.drawImage(img,0,0);
+          const w = c.width, h=c.height; ctx.globalAlpha=0.18; ctx.fillStyle='white'; ctx.font = Math.floor(w/12)+'px sans-serif'; ctx.textAlign='center'; ctx.fillText('AMAZODI (FREE)', w/2, h/2);
+          c.toBlob(b=>{const dl = document.createElement('a'); dl.href = URL.createObjectURL(b); dl.download = (a.title||'asset') + '_AMAZODI.png'; dl.click(); URL.revokeObjectURL(url);}, 'image/png')
+        };
+        img.src = url;
+      })
+    }
+
+    // simulate purchase
+    function purchaseAsset(a){
+      // simulated checkout: mark as purchased in localStorage
+      const key = 'purchased_'+a.id;
+      localStorage.setItem(key, '1');
+      // provide original file directly
+      const dl = document.createElement('a'); dl.href = a.src; dl.download = (a.title||'asset') + '.svg'; dl.click(); alert('Purchase simulated — file downloaded (demo).')
+    }
+
+    // upload flow (client-side only)
+    const uploadBackdrop = document.getElementById('uploadBackdrop');
+    document.getElementById('uploadBtn').onclick = ()=>uploadBackdrop.style.display='flex';
+    document.getElementById('uploadClose').onclick = ()=>uploadBackdrop.style.display='none';
+    document.getElementById('fileInput').onchange = ev=>{
+      const f = ev.target.files[0]; if(!f) return; const reader = new FileReader(); reader.onload = e=>{ const preview = document.getElementById('filePreview'); preview.innerHTML=''; const img = new Image(); img.src = e.target.result; img.style.maxWidth='100%'; img.style.maxHeight='100%'; preview.appendChild(img); preview.dataset.src = e.target.result }; reader.readAsDataURL(f);
+    }
+    document.getElementById('doUpload').onclick = ()=>{
+      const src = document.getElementById('filePreview').dataset.src; if(!src) return alert('Please choose a file');
+      const title = document.getElementById('titleInput').value || 'Untitled';
+      const author = document.getElementById('authorInput').value || 'Anonymous';
+      const tags = (document.getElementById('tagsInput').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const category = document.getElementById('categoryInput').value || 'Illustration';
+      const desc = document.getElementById('descInput').value || '';
+      const a = {id:uid(),title,author,category,tags,src,desc,likes:0,comments:[],paid: Math.random()>0.6 ? Math.floor(Math.random()*5)+1 : 0 };
+      assets.unshift(a); save(); renderGallery(filteredAssets()); uploadBackdrop.style.display='none';
+      // clear inputs
+      document.getElementById('filePreview').innerHTML=''; document.getElementById('filePreview').dataset.src=''; document.getElementById('titleInput').value=''; document.getElementById('authorInput').value=''; document.getElementById('tagsInput').value=''; document.getElementById('descInput').value='';
+    }
+
+    // search handlers
+    document.getElementById('searchInput').addEventListener('input', ()=>renderGallery(filteredAssets()));
+    document.getElementById('categoryFilter').addEventListener('change', ()=>renderGallery(filteredAssets()));
+    document.getElementById('clearBtn').addEventListener('click', ()=>{document.getElementById('searchInput').value=''; document.getElementById('categoryFilter').value=''; renderGallery(filteredAssets());});
+
+    // admin demo
+    const adminBackdrop = document.getElementById('adminBackdrop');
+    document.getElementById('adminBtn').onclick = ()=>{
+      const pw = prompt('Admin demo password (type: admin)'); if(pw==='admin') { adminBackdrop.style.display='flex'; renderAdmin(); } else if(pw) alert('Wrong password for demo.')
+    }
+    document.getElementById('adminClose').onclick = ()=>adminBackdrop.style.display='none';
+    document.getElementById('reseedBtn').onclick = ()=>{ assets = seed(); save(); renderGallery(filteredAssets()); renderAdmin(); alert('Reseeded demo data.'); }
+    document.getElementById('clearDataBtn').onclick = ()=>{ if(confirm('Clear all local demo data?')){ localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+
+    function renderAdmin(){
+      const el = document.getElementById('adminAssets'); el.innerHTML=''; assets.forEach(a=>{
+        const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='8px 0';
+        row.innerHTML = `<div><strong>${escapeHtml(a.title)}</strong><div class='small muted'>${escapeHtml(a.author)} • ${escapeHtml(a.category)}</div></div>`;
+        const rm = document.createElement('button'); rm.className='btn'; rm.textContent='Delete'; rm.onclick = ()=>{ if(confirm('Delete asset?')){ assets = assets.filter(x=>x.id!==a.id); save(); renderGallery(filteredAssets()); renderAdmin(); } };
+        row.appendChild(rm); el.appendChild(row);
+      })
+    }
+
+    // utility: download original link (if purchased)
+    function isPurchased(a){ return !!localStorage.getItem('purchased_'+a.id); }
+
+
+    // initial render
+    renderGallery(filteredAssets());
+
+    // small helper: close modal on backdrop click
+    modalBackdrop.addEventListener('click', (e)=>{ if(e.target===modalBackdrop) modalBackdrop.style.display='none'; })
+    uploadBackdrop.addEventListener('click', (e)=>{ if(e.target===uploadBackdrop) uploadBackdrop.style.display='none'; })
+    adminBackdrop.addEventListener('click', (e)=>{ if(e.target===adminBackdrop) adminBackdrop.style.display='none'; })
+
+    // quick notes: this is a front-end demo. For real product:
+    // - move store to a server (Node/Python/Rails) + database (Postgres/Mongo)
+    // - secure uploads and generate raster/HD assets server-side
+    // - implement proper payments (Stripe/PayPal) and license flow
+    // - add authentication (OAuth / email) and moderation
+
+  </script>
+
+</body>
+</html>
